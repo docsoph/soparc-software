@@ -14,6 +14,8 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.19484775
     description: "Zenodo concept DOI (resolves to latest version)"
+institution:
+  name: "More Sport Their Way Research Project, Edith Cowan University"
 repository-code: "https://github.com/docsoph/soparc-software"
 authors:
   - family-names: "Nimphius"
