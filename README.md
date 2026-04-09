@@ -117,9 +117,7 @@ Marquet, O., Hipp, J. A., Alberico, C., et. al. (2019). Use of SOPARC to assess 
 
 ### This software
 
-Nimphius, S. (2026). *SOPARC Dual-Video Coding Tool* [Open-source software]. More Sport Their Way Research Project, Edith Cowan University. https://github.com/docsoph/soparc-software
-
-> Once a Zenodo DOI is assigned, add `doi:10.5281/zenodo.XXXXXXX` to the citation above and update `CITATION.cff`.
+Nimphius, S. (2026). *SOPARC Dual-Video Coding Tool* [Open-source software]. More Sport Their Way Research Project, Edith Cowan University. https://github.com/docsoph/soparc-software. https://doi.org/10.5281/zenodo.19484775
 
 A `CITATION.cff` file is included for automated citation support in GitHub and Zenodo.
 
