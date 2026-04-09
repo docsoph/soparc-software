@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOPARC Dual-Video Coding Tool</title>
+<style>
+  /* ── Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 14px; background: #f0f4f8; color: #222; }
+  h2 { font-size: 1rem; color: #2f5496; margin-bottom: 8px; letter-spacing: .03em; text-transform: uppercase; }
+  h3 { font-size: .85rem; color: #444; margin-bottom: 6px; font-weight: 600; }
+  label { font-size: .82rem; color: #444; display: block; margin-bottom: 2px; }
+  input[type=text], input[type=date], input[type=number], select, textarea {
+    width: 100%; padding: 5px 7px; border: 1px solid #bbb; border-radius: 4px;
+    font-size: .82rem; background: #fff; margin-bottom: 8px;
+  }
+  input[type=text]:focus, input[type=number]:focus, select:focus {
+    outline: 2px solid #2f5496; border-color: #2f5496;
+  }
+  input[type=range] {
+    width: 100%; padding: 0; height: 18px; cursor: pointer;
+    accent-color: #2f5496; margin-bottom: 0;
+  }
+  button {
+    cursor: pointer; border: none; border-radius: 5px; font-size: .82rem;
+    padding: 6px 14px; font-weight: 600; transition: opacity .15s;
+  }
+  button:hover { opacity: .85; }
+  .btn-primary   { background: #2f5496; color: #fff; }
+  .btn-success   { background: #217a3c; color: #fff; }
+  .btn-warning   { background: #c47a00; color: #fff; }
+  .btn-danger    { background: #a42020; color: #fff; }
+  .btn-secondary { background: #6c757d; color: #fff; }
+  .btn-small     { padding: 3px 9px; font-size: .75rem; }
+
+  /* ── Layout ── */
+  #app { display: grid; grid-template-columns: 1fr; gap: 0; }
+  header {
+    background: linear-gradient(135deg, #2f5496 0%, #1e3a6e 100%);
+    color: #fff; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 1.15rem; font-weight: 700; letter-spacing: .04em; }
+  header p  { font-size: .75rem; opacity: .8; margin-top: 3px; }
+  .badge {
+    background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.4);
+    border-radius: 12px; padding: 4px 12px; font-size: .7rem; color: #fff;
+  }
+
+  .main-area { display: grid; grid-template-columns: 340px 1fr; gap: 14px; padding: 14px; min-height: calc(100vh - 64px); }
+
+  /* ── Left panel ── */
+  .left-panel { display: flex; flex-direction: column; gap: 12px; }
+  .card { background: #fff; border-radius: 8px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+  /* ── Tab nav ── */
+  .tab-bar { display: flex; gap: 4px; border-bottom: 2px solid #dde3ef; margin-bottom: 12px; }
+  .tab-btn {
+    padding: 6px 12px; font-size: .8rem; font-weight: 600; border-radius: 5px 5px 0 0;
+    border: 1px solid transparent; border-bottom: none; background: #f0f4f8; color: #555; cursor: pointer;
+  }
+  .tab-btn.active { background: #2f5496; color: #fff; border-color: #2f5496; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Video area ── */
+  .right-panel { display: flex; flex-direction: column; gap: 12px; }
+  .video-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .video-box {
+    background: #000; border-radius: 8px; overflow: hidden; position: relative;
+    border: 2px solid #2f5496;
+  }
+  .video-box video { width: 100%; display: block; max-height: 260px; object-fit: contain; background: #111; }
+  .video-label {
+    position: absolute; top: 6px; left: 8px;
+    background: rgba(0,0,0,.65); color: #fff; font-size: .7rem; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px; pointer-events: none;
+  }
+  .video-controls {
+    background: #fff; border-radius: 0 0 8px 8px; padding: 8px 10px;
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  }
+  .video-time { font-size: .75rem; color: #2f5496; font-weight: 700; min-width: 70px; }
+
+  /* ── Speed slider row ── */
+  .speed-row {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 4px 0 2px; border-top: 1px solid #eee; margin-top: 4px;
+  }
+  .speed-row label { margin: 0; font-size: .72rem; color: #555; white-space: nowrap; flex: 0 0 auto; }
+  .speed-row input[type=range] { flex: 1; }
+  .speed-val { font-size: .72rem; font-weight: 700; color: #2f5496; min-width: 34px; text-align: right; }
+
+  /* ── Sync bar ── */
+  .sync-bar {
+    background: #fff3cd; border: 1px solid #f0c060; border-radius: 6px;
+    padding: 8px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .sync-bar label { margin: 0; font-size: .8rem; color: #664d03; font-weight: 600; }
+  .sync-bar span  { font-size: .78rem; color: #555; }
+
+  /* ── Person coding ── */
+  .coding-bar {
+    background: #fff; border-radius: 8px; padding: 12px 14px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1);
+  }
+  .coding-bar .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+  .coding-bar .field        { flex: 1 1 120px; }
+  .coding-bar .field.narrow { flex: 0 0 88px; }
+  .coding-bar .field.xnarrow{ flex: 0 0 68px; }
+  .coding-bar .field.wide   { flex: 1 1 160px; }
+  .coding-bar label { font-size: .75rem; margin-bottom: 1px; }
+  .coding-bar input, .coding-bar select { margin-bottom: 0; font-size: .8rem; }
+  .ts-btn { white-space: nowrap; }
+
+  /* ── Table ── */
+  .table-wrap { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .77rem; }
+  thead th {
+    background: #2f5496; color: #fff; padding: 6px 8px;
+    text-align: left; font-size: .72rem; font-weight: 700; white-space: nowrap; position: sticky; top: 0;
+  }
+  tbody tr:nth-child(even) { background: #f5f8fd; }
+  tbody tr:hover { background: #e8eef8; }
+  tbody td { padding: 5px 8px; border-bottom: 1px solid #e0e6f0; white-space: nowrap; }
+  tbody td .del-btn { padding: 2px 7px; }
+
+  /* ── Intensity / Gender pills ── */
+  .pill {
+    display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: .68rem;
+    font-weight: 700; text-transform: uppercase;
+  }
+  /* Gender */
+  .pill-F  { background: #f8d7e8; color: #6b1434; }
+  .pill-M  { background: #cfe2ff; color: #0a3272; }
+  .pill-N  { background: #e2e3e5; color: #383d41; }
+  /* Intensity */
+  .pill-Sed { background: #d4edda; color: #155724; }
+  .pill-Mod { background: #fff3cd; color: #856404; }
+  .pill-Vig { background: #f8d7da; color: #721c24; }
+
+  /* ── Export ── */
+  .export-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .main-area { grid-template-columns: 1fr; }
+    .video-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════ HEADER ════════════════════════════════════════════════════════════ -->
+<header>
+  <div>
+    <h1>SOPARC Dual-Video Coding Tool</h1>
+    <p>System for Observing Play and Recreation in Communities — Dual-Video Adaptation</p>
+  </div>
+  <span class="badge">Open Source · ECU</span>
+</header>
+
+<div class="main-area">
+
+<!-- ════ LEFT PANEL ═══════════════════════════════════════════════════════ -->
+<div class="left-panel">
+
+  <!-- Tab navigation -->
+  <div class="card" style="padding:0;">
+    <div class="tab-bar" style="padding:10px 12px 0; margin-bottom:0;">
+      <button class="tab-btn active" onclick="switchTab('session')">Session</button>
+      <button class="tab-btn" onclick="switchTab('context')">Context</button>
+      <button class="tab-btn" onclick="switchTab('export')">Export</button>
+    </div>
+
+    <!-- ── Tab: Session ── -->
+    <div id="tab-session" class="tab-panel active" style="padding:14px;">
+      <h2>Session Information</h2>
+      <label>Project</label>
+      <input type="text" id="s-project" placeholder="e.g. More Sport Their Way">
+      <label>Site</label>
+      <input type="text" id="s-site" placeholder="e.g. Memorial Park Court 1">
+      <label>Observer ID</label>
+      <input type="text" id="s-observer" placeholder="Observer code or initials">
+      <label>Date</label>
+      <input type="date" id="s-date">
+      <label>Day of Week</label>
+      <select id="s-day">
+        <option value="">— select —</option>
+        <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+        <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+      </select>
+      <label>Temperature (°C)</label>
+      <input type="text" id="s-temp" placeholder="e.g. 22">
+      <label>Shade</label>
+      <select id="s-shade">
+        <option value="">— select —</option>
+        <option>Predominantly shade</option>
+        <option>Shade-sun mix</option>
+        <option>Predominantly sun</option>
+      </select>
+      <label>Observation Start (HH:MM:SS)</label>
+      <input type="text" id="s-start" placeholder="e.g. 15:00:00" style="font-family:monospace;">
+      <label>Observation Stop (HH:MM:SS)</label>
+      <input type="text" id="s-stop" placeholder="e.g. 17:00:00" style="font-family:monospace;">
+    </div>
+
+    <!-- ── Tab: Context ── -->
+    <div id="tab-context" class="tab-panel" style="padding:14px;">
+      <h2>Area Context</h2>
+      <p style="font-size:.75rem;color:#666;margin-bottom:10px;">Complete once per session. Describes the environment, not individuals.</p>
+
+      <h3>Area Information</h3>
+      <label>Visibility (from footage)</label>
+      <select id="c-visibility">
+        <option value="">— select —</option>
+        <option>Poor</option><option>Partially Restricted</option><option>Good</option>
+      </select>
+      <label>Facility type</label>
+      <select id="c-facility-type">
+        <option value="">— select —</option>
+        <option>Court</option><option>Field</option><option>Open Space</option>
+        <option>Playground</option><option>Other</option>
+      </select>
+      <label>Facility condition</label>
+      <select id="c-condition">
+        <option value="">— select —</option>
+        <option>Good</option><option>Fair</option><option>Poor</option>
+      </select>
+      <label>Accessible (open or locked)</label>
+      <select id="c-accessible">
+        <option value="">— select —</option>
+        <option>Good</option><option>Fair</option><option>Poor</option>
+      </select>
+
+      <h3 style="margin-top:10px;">Safety &amp; Comfort</h3>
+      <label>Adult role present</label>
+      <select id="c-adult-role">
+        <option value="">— select —</option>
+        <option>Not present</option><option>Staff</option><option>Parent or caregiver</option>
+      </select>
+      <label>Lighting</label>
+      <select id="c-lighting">
+        <option value="">— select —</option>
+        <option>Adequate</option><option>Dim</option><option>Poor</option><option>Natural</option>
+      </select>
+      <label>Perceived safety</label>
+      <select id="c-safety">
+        <option value="">— select —</option>
+        <option>Safe</option><option>Moderate</option><option>Unsafe</option>
+      </select>
+      <label>Parking proximity</label>
+      <select id="c-parking">
+        <option value="">— select —</option>
+        <option>Adjacent</option><option>Near</option><option>Far</option><option>None</option>
+      </select>
+      <label>Toilet facility accessibility</label>
+      <select id="c-toilets">
+        <option value="">— select —</option>
+        <option>Accessible</option><option>Nearby</option><option>Distant</option><option>None</option>
+      </select>
+      <label>Cleanliness</label>
+      <select id="c-clean">
+        <option value="">— select —</option>
+        <option>Clean</option><option>Moderate</option><option>Poor</option>
+      </select>
+      <label>Signage pertaining to use</label>
+      <select id="c-signage">
+        <option value="">— select —</option>
+        <option>Clear</option><option>Somewhat Clear</option><option>None</option>
+      </select>
+
+      <h3 style="margin-top:10px;">Social &amp; Cultural</h3>
+      <label>Peers / role models present</label>
+      <select id="c-peers">
+        <option value="">— select —</option>
+        <option>Yes</option><option>No</option><option>Unclear</option>
+      </select>
+      <label>Cultural signage / cues</label>
+      <select id="c-cult-sign">
+        <option value="">— select —</option>
+        <option>Clear</option><option>Somewhat Clear</option><option>None</option>
+      </select>
+      <label>Inclusivity of environment</label>
+      <select id="c-inclusive">
+        <option value="">— select —</option>
+        <option>Inclusive</option><option>Partially Inclusive</option>
+        <option>Exclusive</option><option>Unclear</option>
+      </select>
+    </div>
+
+    <!-- ── Tab: Export ── -->
+    <div id="tab-export" class="tab-panel" style="padding:14px;">
+      <h2>Export Data</h2>
+      <p style="font-size:.78rem;color:#555;margin-bottom:12px;">
+        Downloads CSV files for the session/context and all person-level observations.
+        Open in Excel, SPSS, R, or any statistics package.
+      </p>
+      <div class="export-bar" style="flex-direction:column;gap:10px;">
+        <button class="btn-primary" style="width:100%;" onclick="exportSession()">⬇ Download Session + Context CSV</button>
+        <button class="btn-success" style="width:100%;" onclick="exportPersons()">⬇ Download Person Observations CSV</button>
+        <button class="btn-warning" style="width:100%;" onclick="exportAll()">⬇ Download Combined CSV</button>
+      </div>
+      <hr style="margin:16px 0;border-color:#ddd;">
+      <h3>Stats summary</h3>
+      <div id="stats-box" style="font-size:.8rem;line-height:1.8;color:#333;">
+        <em>No observations yet.</em>
+      </div>
+      <hr style="margin:16px 0;border-color:#ddd;">
+      <p style="font-size:.7rem;color:#888;line-height:1.6;">
+        <strong>Software Citation:</strong> Nimphius, S. (2026). SOPARC Dual-Video Coding Tool
+        [Open-source software]. More Sport Their Way Research Project, Edith Cowan University.
+        https://github.com/docsoph/soparc-software<br><br>
+        <strong>Funding:</strong> This tool was developed as part of the More Sport Their Way
+        research project, funded by Healthway (WA Health Promotion Foundation) Health Promotion
+        Research – Exploratory Research Grants (2024–2026). Penney, D. et al.,
+        <em>More Sport, Their Way! Promoting women's informal sport participation in WA.</em>
+        Ethics Approved: Edith Cowan University HREC 2023-04756-PENNEY.<br><br>
+        <strong>AI Assistance:</strong> Software developed with assistance from Claude Sonnet 4.6
+        (Anthropic, 2025).<br><br>
+        <strong>References:</strong> Marquet O, Hipp JA, Alberico C, et al. Use of SOPARC to
+        assess physical activity in parks. <em>BMC Public Health.</em> 2019;19:1730.
+        doi:10.1186/s12889-019-8107-0<br><br>
+        McKenzie T, Cohen D, Sehgal A, et al. System for observing play and recreation in 
+        communities (soparc). <em>Jounal of Physical Activity and Health.</em> 2006;3:S208.
+        doi:10.1123/jpah.3.s1.s208<br><br>
+      </p>
+    </div>
+  </div><!-- /card -->
+</div><!-- /left-panel -->
+
+<!-- ════ RIGHT PANEL ══════════════════════════════════════════════════════ -->
+<div class="right-panel">
+
+  <!-- Video loaders -->
+  <div class="card">
+    <h2 style="margin-bottom:10px;">Load Videos</h2>
+    <div class="video-grid">
+      <div>
+        <label style="font-size:.8rem;font-weight:700;color:#2f5496;margin-bottom:4px;">VIDEO A</label>
+        <input type="file" id="fileA" accept="video/*" onchange="loadVideo('A')" style="margin-bottom:4px;">
+        <input type="text" id="nameA" placeholder="Video A label (auto-filled)" style="font-size:.75rem;">
+      </div>
+      <div>
+        <label style="font-size:.8rem;font-weight:700;color:#217a3c;margin-bottom:4px;">VIDEO B</label>
+        <input type="file" id="fileB" accept="video/*" onchange="loadVideo('B')" style="margin-bottom:4px;">
+        <input type="text" id="nameB" placeholder="Video B label (auto-filled)" style="font-size:.75rem;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Video players -->
+  <div class="video-grid">
+
+    <!-- Video A -->
+    <div class="video-box" style="border-color:#2f5496;">
+      <span class="video-label" style="background:rgba(47,84,150,.8);">VIDEO A</span>
+      <video id="vidA" controls preload="metadata" onloadedmetadata="onMeta('A')"
+             ontimeupdate="onTick('A')" onseeked="onTick('A')">
+        <source src="" type="video/mp4">
+      </video>
+      <div class="video-controls">
+        <span class="video-time" id="timeA">00:00:00</span>
+        <button class="btn-primary btn-small" onclick="stepFrame('A',-1/30)">‹</button>
+        <button class="btn-primary btn-small" onclick="stepFrame('A', 1/30)">›</button>
+        <button class="btn-secondary btn-small" onclick="setSyncPoint('A')">📌 Set Sync</button>
+        <button class="btn-warning btn-small ts-btn" onclick="grabTimestamp('A','entry')">▶ Entry</button>
+        <button class="btn-danger  btn-small ts-btn" onclick="grabTimestamp('A','exit')">■ Exit</button>
+        <!-- Speed slider -->
+        <div class="speed-row">
+          <label>Speed</label>
+          <input type="range" id="speed-A" min="0.25" max="2" step="0.25" value="1"
+                 oninput="setSpeed('A', this.value)">
+          <span class="speed-val" id="speed-disp-A">1.00×</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video B -->
+    <div class="video-box" style="border-color:#217a3c;">
+      <span class="video-label" style="background:rgba(33,122,60,.8);">VIDEO B</span>
+      <video id="vidB" controls preload="metadata" onloadedmetadata="onMeta('B')"
+             ontimeupdate="onTick('B')" onseeked="onTick('B')">
+        <source src="" type="video/mp4">
+      </video>
+      <div class="video-controls">
+        <span class="video-time" id="timeB">00:00:00</span>
+        <button class="btn-success btn-small" onclick="stepFrame('B',-1/30)">‹</button>
+        <button class="btn-success btn-small" onclick="stepFrame('B', 1/30)">›</button>
+        <button class="btn-secondary btn-small" onclick="setSyncPoint('B')">📌 Set Sync</button>
+        <button class="btn-warning btn-small ts-btn" onclick="grabTimestamp('B','entry')">▶ Entry</button>
+        <button class="btn-danger  btn-small ts-btn" onclick="grabTimestamp('B','exit')">■ Exit</button>
+        <!-- Speed slider -->
+        <div class="speed-row">
+          <label>Speed</label>
+          <input type="range" id="speed-B" min="0.25" max="2" step="0.25" value="1"
+                 oninput="setSpeed('B', this.value)">
+          <span class="speed-val" id="speed-disp-B">1.00×</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sync bar -->
+  <div class="sync-bar">
+    <label>🔗 Sync</label>
+    <span>Sync A: <strong id="syncA-disp">—</strong></span>
+    <span>Sync B: <strong id="syncB-disp">—</strong></span>
+    <span>Offset: <strong id="offset-disp">—</strong></span>
+    <button class="btn-secondary btn-small" onclick="applySyncPlay()">▶ Play Both (synced)</button>
+    <button class="btn-secondary btn-small" onclick="pauseBoth()">⏸ Pause Both</button>
+    <button class="btn-secondary btn-small" onclick="clearSync()">✕ Clear Sync</button>
+    <span id="sync-status" style="font-size:.75rem;color:#664d03;"></span>
+  </div>
+
+  <!-- Person coding bar -->
+  <div class="coding-bar card">
+    <h2 style="margin-bottom:10px;">Person Coding</h2>
+    <div class="row">
+
+      <div class="field narrow">
+        <label>Video</label>
+        <select id="p-video">
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="Both">Both</option>
+        </select>
+      </div>
+
+      <div class="field narrow">
+        <label>Entry (HH:MM:SS)</label>
+        <input type="text" id="p-entry" placeholder="00:00:00" style="font-family:monospace;">
+      </div>
+
+      <div class="field narrow">
+        <label>Exit (HH:MM:SS)</label>
+        <input type="text" id="p-exit" placeholder="00:00:00" style="font-family:monospace;">
+      </div>
+
+      <div class="field xnarrow">
+        <label>Number</label>
+        <input type="number" id="p-count" placeholder="1" min="1" style="font-weight:600;">
+      </div>
+
+      <div class="field narrow">
+        <label>Gender</label>
+        <select id="p-gender">
+          <option value="W">Women / Girls (W)</option>
+          <option value="M">Men / Boys (M)</option>
+          <option value="N">Non-binary / Unclear (N)</option>
+        </select>
+      </div>
+
+      <div class="field narrow">
+        <label>Age Group</label>
+        <select id="p-age">
+          <option value="Children">Children</option>
+          <option value="Teen">Teen</option>
+          <option value="Adult" selected>Adult</option>
+          <option value="Senior">Senior</option>
+        </select>
+      </div>
+
+      <div class="field narrow">
+        <label>Race / Ethnicity</label>
+        <select id="p-ethnicity">
+          <option value="ATSI">Aboriginal or Torres Strait Islander</option>
+          <option value="White">White / Anglo-Australian</option>
+          <option value="Asian">Asian</option>
+          <option value="Other">Other / Unsure</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Activity Type</label>
+        <select id="p-act-type">
+          <option value="Informal">Informal</option>
+          <option value="Organised">Organised</option>
+          <option value="Play">Play</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Activity / Sport</label>
+        <input type="text" id="p-act-name" placeholder="e.g. Basketball, walking…">
+      </div>
+
+      <div class="field narrow">
+        <label>Intensity</label>
+        <select id="p-intensity">
+          <option value="Sed">Sedentary</option>
+          <option value="Mod">Moderate</option>
+          <option value="Vig">Vigorous</option>
+        </select>
+      </div>
+
+      <div class="field wide">
+        <label>Notes</label>
+        <input type="text" id="p-notes" placeholder="Optional notes…">
+      </div>
+
+      <div class="field narrow" style="flex:0 0 auto;">
+        <label>&nbsp;</label>
+        <button class="btn-success" onclick="addPerson()" style="width:100%;">+ Add</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Observations table -->
+  <div class="table-wrap">
+    <table id="obs-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Video</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>Dwell</th>
+          <th>No.</th>
+          <th>Gender</th>
+          <th>Age</th>
+          <th>Race / Eth.</th>
+          <th>Type</th>
+          <th>Activity</th>
+          <th>Intensity</th>
+          <th>Notes</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="obs-body">
+        <tr><td colspan="14" style="text-align:center;color:#aaa;padding:20px;">
+          No observations yet — load videos and use the coding bar above.
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /right-panel -->
+</div><!-- /main-area -->
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// State
+// ═══════════════════════════════════════════════════════════════════════════
+const state = {
+  observations: [],
+  syncA: null,
+  syncB: null,
+  syncOffset: null
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Tabs
+// ═══════════════════════════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'export') updateStats();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Video loading
+// ═══════════════════════════════════════════════════════════════════════════
+function loadVideo(ch) {
+  const file = document.getElementById('file' + ch).files[0];
+  if (!file) return;
+  const vid    = document.getElementById('vid' + ch);
+  const nameEl = document.getElementById('name' + ch);
+  vid.src = URL.createObjectURL(file);
+  vid.load();
+  nameEl.value = file.name;
+  // reset speed display
+  document.getElementById('speed-' + ch).value = 1;
+  document.getElementById('speed-disp-' + ch).textContent = '1.00×';
+}
+
+function onMeta(ch) { /* nothing extra needed */ }
+
+function onTick(ch) {
+  document.getElementById('time' + ch).textContent =
+    fmtSecs(document.getElementById('vid' + ch).currentTime);
+}
+
+function stepFrame(ch, delta) {
+  const vid = document.getElementById('vid' + ch);
+  vid.pause();
+  vid.currentTime = Math.max(0, vid.currentTime + delta);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Playback speed
+// ═══════════════════════════════════════════════════════════════════════════
+function setSpeed(ch, val) {
+  const rate = parseFloat(val);
+  document.getElementById('vid' + ch).playbackRate = rate;
+  document.getElementById('speed-disp-' + ch).textContent = rate.toFixed(2) + '×';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Sync
+// ═══════════════════════════════════════════════════════════════════════════
+function setSyncPoint(ch) {
+  const t = document.getElementById('vid' + ch).currentTime;
+  state['sync' + ch] = t;
+  document.getElementById('sync' + ch + '-disp').textContent = fmtSecs(t);
+  recalcOffset();
+}
+
+function recalcOffset() {
+  if (state.syncA !== null && state.syncB !== null) {
+    state.syncOffset = state.syncB - state.syncA;
+    document.getElementById('offset-disp').textContent =
+      (state.syncOffset >= 0 ? '+' : '') + state.syncOffset.toFixed(3) + 's';
+    document.getElementById('sync-status').textContent =
+      '✓ Sync set — Video B leads A by ' +
+      (state.syncOffset >= 0 ? '+' : '') + state.syncOffset.toFixed(2) + 's';
+  }
+}
+
+function applySyncPlay() {
+  const vA = document.getElementById('vidA');
+  const vB = document.getElementById('vidB');
+  if (state.syncOffset !== null) vB.currentTime = vA.currentTime + state.syncOffset;
+  vA.play(); vB.play();
+}
+
+function pauseBoth() {
+  document.getElementById('vidA').pause();
+  document.getElementById('vidB').pause();
+}
+
+function clearSync() {
+  state.syncA = state.syncB = state.syncOffset = null;
+  ['A','B'].forEach(ch => {
+    document.getElementById('sync' + ch + '-disp').textContent = '—';
+  });
+  document.getElementById('offset-disp').textContent = '—';
+  document.getElementById('sync-status').textContent = '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Timestamp grabbing
+// ═══════════════════════════════════════════════════════════════════════════
+function grabTimestamp(ch, field) {
+  const vid = document.getElementById('vid' + ch);
+  let t = vid.currentTime;
+  if (state.syncOffset !== null && ch === 'B') t -= state.syncOffset;
+  document.getElementById('p-' + field).value = fmtSecs(t);
+  document.getElementById('p-video').value = ch;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Person coding
+// ═══════════════════════════════════════════════════════════════════════════
+function addPerson() {
+  const get  = id => document.getElementById(id).value.trim();
+  const entry = get('p-entry');
+  const exit_ = get('p-exit');
+
+  const person = {
+    id:        state.observations.length + 1,
+    video:     get('p-video'),
+    entry:     entry,
+    exit:      exit_,
+    dwell:     calcDwell(entry, exit_),
+    count:     get('p-count') || '1',
+    gender:    get('p-gender'),
+    age:       get('p-age'),
+    ethnicity: get('p-ethnicity'),
+    actType:   get('p-act-type'),
+    actName:   get('p-act-name'),
+    intensity: get('p-intensity'),
+    notes:     get('p-notes')
+  };
+
+  state.observations.push(person);
+  renderTable();
+  clearCodingForm();
+}
+
+function deletePerson(idx) {
+  state.observations.splice(idx, 1);
+  state.observations.forEach((p, i) => p.id = i + 1);
+  renderTable();
+}
+
+function clearCodingForm() {
+  ['p-entry', 'p-exit', 'p-count', 'p-act-name', 'p-notes'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Render table
+// ═══════════════════════════════════════════════════════════════════════════
+function renderTable() {
+  const tbody = document.getElementById('obs-body');
+  if (state.observations.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="14" style="text-align:center;color:#aaa;padding:20px;">' +
+      'No observations yet — load videos and use the coding bar above.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.observations.map((p, i) => `
+    <tr>
+      <td><strong>${p.id}</strong></td>
+      <td><span class="pill" style="background:${p.video==='A'?'#cfe2ff':'#d1e7dd'};color:${p.video==='A'?'#0a3272':'#0a3622'};">${p.video}</span></td>
+      <td style="font-family:monospace;">${p.entry || '—'}</td>
+      <td style="font-family:monospace;">${p.exit  || '—'}</td>
+      <td style="font-family:monospace;font-weight:600;color:#2f5496;">${p.dwell || '—'}</td>
+      <td style="text-align:center;font-weight:600;">${p.count || '1'}</td>
+      <td><span class="pill pill-${p.gender}">${p.gender}</span></td>
+      <td>${p.age}</td>
+      <td style="font-size:.72rem;">${p.ethnicity}</td>
+      <td>${p.actType}</td>
+      <td>${p.actName || '—'}</td>
+      <td><span class="pill pill-${p.intensity}">${p.intensity}</span></td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;">${p.notes || ''}</td>
+      <td><button class="btn-danger btn-small del-btn" onclick="deletePerson(${i})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Stats
+// ═══════════════════════════════════════════════════════════════════════════
+function updateStats() {
+  const box = document.getElementById('stats-box');
+  const obs = state.observations;
+  if (obs.length === 0) { box.innerHTML = '<em>No observations yet.</em>'; return; }
+
+  const n   = obs.length;
+  const nF  = obs.filter(p => p.gender === 'W').length;
+  const nM  = obs.filter(p => p.gender === 'M').length;
+  const nN  = obs.filter(p => p.gender === 'N').length;
+
+  const nSed = obs.filter(p => p.intensity === 'Sed').length;
+  const nMod = obs.filter(p => p.intensity === 'Mod').length;
+  const nVig = obs.filter(p => p.intensity === 'Vig').length;
+
+  const nATSI  = obs.filter(p => p.ethnicity === 'ATSI').length;
+  const nWA    = obs.filter(p => p.ethnicity === 'White').length;
+  const nAsian = obs.filter(p => p.ethnicity === 'Asian').length;
+  const nOther = obs.filter(p => p.ethnicity === 'Other').length;
+
+  const dwells = obs.map(p => parseDwell(p.dwell)).filter(d => d !== null);
+  const meanDwell = dwells.length
+    ? Math.round(dwells.reduce((a,b) => a+b, 0) / dwells.length)
+    : null;
+
+  box.innerHTML = `
+    <strong>Total observations:</strong> ${n}<br>
+    <strong>Gender:</strong>
+      Women/Girls ${nW} (${pct(nW,n)}%) &middot;
+      Men/Boys ${nM} (${pct(nM,n)}%) &middot;
+      Non-binary/Unclear ${nN} (${pct(nN,n)}%)<br>
+    <strong>Intensity:</strong>
+      Sedentary ${nSed} (${pct(nSed,n)}%) &middot;
+      Moderate ${nMod} (${pct(nMod,n)}%) &middot;
+      Vigorous ${nVig} (${pct(nVig,n)}%)<br>
+    <strong>Race / Ethnicity:</strong>
+      ATSI ${nATSI} (${pct(nATSI,n)}%) &middot;
+      White/Anglo ${nWhite} (${pct(nWhite,n)}%) &middot;
+      Asian ${nAsian} (${pct(nAsian,n)}%) &middot;
+      Other/Unsure ${nOther} (${pct(nOther,n)}%)<br>
+    <strong>Mean dwell time:</strong>
+      ${meanDwell !== null ? fmtSecs(meanDwell) : 'n/a (no timestamps)'}
+  `;
+}
+
+function pct(a, b) { return b ? Math.round(100 * a / b) : 0; }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CSV Export
+// ═══════════════════════════════════════════════════════════════════════════
+function getSessionObj() {
+  const gv = id => document.getElementById(id).value;
+  return {
+    project:          gv('s-project'),
+    site:             gv('s-site'),
+    observer:         gv('s-observer'),
+    date:             gv('s-date'),
+    day:              gv('s-day'),
+    temperature_c:    gv('s-temp'),
+    shade:            gv('s-shade'),
+    obs_start:        gv('s-start'),
+    obs_stop:         gv('s-stop'),
+    video_a:          gv('nameA'),
+    video_b:          gv('nameB'),
+    sync_a:           document.getElementById('syncA-disp').textContent,
+    sync_b:           document.getElementById('syncB-disp').textContent,
+    sync_offset_s:    state.syncOffset !== null ? state.syncOffset.toFixed(3) : '',
+    visibility:       gv('c-visibility'),
+    facility_type:    gv('c-facility-type'),
+    facility_cond:    gv('c-condition'),
+    accessible:       gv('c-accessible'),
+    adult_role:       gv('c-adult-role'),
+    lighting:         gv('c-lighting'),
+    safety:           gv('c-safety'),
+    parking:          gv('c-parking'),
+    toilets:          gv('c-toilets'),
+    cleanliness:      gv('c-clean'),
+    signage:          gv('c-signage'),
+    peers:            gv('c-peers'),
+    cult_signage:     gv('c-cult-sign'),
+    inclusivity:      gv('c-inclusive'),
+  };
+}
+
+function toCSV(rows) {
+  const headers = Object.keys(rows[0]);
+  const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  return [
+    headers.map(esc).join(','),
+    ...rows.map(r => headers.map(k => esc(r[k])).join(','))
+  ].join('\r\n');
+}
+
+function download(csv, filename) {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function exportSession() {
+  download(toCSV([getSessionObj()]), 'soparc_session_context.csv');
+}
+
+function exportPersons() {
+  if (!state.observations.length) { alert('No observations to export yet.'); return; }
+  const rows = state.observations.map(p => ({
+    session_site:     document.getElementById('s-site').value,
+    session_date:     document.getElementById('s-date').value,
+    session_observer: document.getElementById('s-observer').value,
+    obs_id:           p.id,
+    video:            p.video,
+    entry_timestamp:  p.entry,
+    exit_timestamp:   p.exit,
+    dwell_time:       p.dwell,
+    number:           p.count,
+    gender:           p.gender,
+    age_group:        p.age,
+    race_ethnicity:   p.ethnicity,
+    activity_type:    p.actType,
+    activity_name:    p.actName,
+    intensity:        p.intensity,
+    notes:            p.notes,
+  }));
+  download(toCSV(rows), 'soparc_observations.csv');
+}
+
+function exportAll() {
+  const s = getSessionObj();
+  const rows = state.observations.length
+    ? state.observations.map(p => ({
+        ...s,
+        obs_id:          p.id,
+        video:           p.video,
+        entry_timestamp: p.entry,
+        exit_timestamp:  p.exit,
+        dwell_time:      p.dwell,
+        number:          p.count,
+        gender:          p.gender,
+        age_group:       p.age,
+        race_ethnicity:  p.ethnicity,
+        activity_type:   p.actType,
+        activity_name:   p.actName,
+        intensity:       p.intensity,
+        notes:           p.notes,
+      }))
+    : [s];
+  download(toCSV(rows), 'soparc_combined.csv');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Time helpers
+// ═══════════════════════════════════════════════════════════════════════════
+function fmtSecs(s) {
+  const h   = Math.floor(s / 3600);
+  const m   = Math.floor((s % 3600) / 60);
+  const sec = Math.floor(s % 60);
+  return [h, m, sec].map(n => String(n).padStart(2, '0')).join(':');
+}
+
+function parseHMS(str) {
+  if (!str) return null;
+  const parts = str.trim().split(':').map(Number);
+  if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  if (parts.length === 2) return parts[0]*60  + parts[1];
+  return null;
+}
+
+function calcDwell(entry, exit_) {
+  const e = parseHMS(entry);
+  const x = parseHMS(exit_);
+  if (e === null || x === null) return '';
+  const diff = x - e;
+  if (diff < 0) return 'n/a';
+  return String(Math.floor(diff / 60)).padStart(2,'0') + ':' +
+         String(Math.floor(diff % 60)).padStart(2,'0');
+}
+
+function parseDwell(str) {
+  if (!str || str === '—' || str === 'n/a' || str === '') return null;
+  const parts = str.split(':').map(Number);
+  return parts.length === 2 ? parts[0]*60 + parts[1] : null;
+}
+</script>
+</body>
+</html>

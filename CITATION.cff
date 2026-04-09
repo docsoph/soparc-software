@@ -1,0 +1,60 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "SOPARC Dual-Video Coding Tool"
+abstract: >
+  An open-source browser-based adaptation of the System for Observing Play
+  and Recreation in Communities (SOPARC) protocol, extended to support
+  dual-angle video coding, video synchronisation, and dwell-time measurement.
+  Developed for the More Sport Their Way Research Project at Edith Cowan University.
+version: "1.0.0"
+date-released: "2026-04-09"
+license: MIT
+repository-code: "https://github.com/docsoph/soparc-software"
+authors:
+  - family-names: "Nimphius"
+    given-names: "Sophia"
+    affiliation: "Edith Cowan University"
+    email: "s.nimphius@ecu.edu.au"
+keywords:
+  - SOPARC
+  - physical activity
+  - observation
+  - public space
+  - sport
+  - CCTV
+  - dual video
+  - dwell time
+  - community recreation
+references:
+  - type: article
+    title: >
+      Use of SOPARC to assess physical activity in parks: do race/ethnicity, contextual conditions, and settings of the target area, affect reliability?
+    authors:
+      - family-names: Marquet
+        given-names: Oriol
+      - family-names: Hipp
+        given-names: Aaron J
+      - family-names: Huang
+        given-names: Jing-Huei
+      - family-names: Fry
+        given-names: Dustin
+      - family-names: Mazak
+        given-names: Elizabeth
+      - family-names: Lovasi
+        given-names: Gina S
+      - family-names: Floyd
+        given-names: EMyron F
+    journal: BMC Public Health
+    volume: 19
+    issue: 1
+    pages: 1730-1741
+    year: 2019
+    pmid: "31870351"
+    pmcid: "PMC6929368"
+  - type: software
+    title: "Claude Sonnet 4.6"
+    authors:
+      - name: "Anthropic"
+    year: 2025
+    url: "https://www.anthropic.com"
+    notes: "AI assistant used to support software development and documentation"
